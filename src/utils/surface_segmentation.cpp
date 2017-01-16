@@ -1,5 +1,5 @@
 #include <surface_segmentation.h>
-#include <pcl/io/pcd_io.h>
+#include <thread>
 
 
 /** @brief default constructor */
