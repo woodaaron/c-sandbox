@@ -407,13 +407,17 @@ void SurfaceSegmentation::removeNans()
 /** @brief compute the normals and store in normals_, this is requried for both segmentation and meshing*/
 void SurfaceSegmentation::computeNormals()
 {
-  normals_->points.clear();
-  // Estimate the normals
+  // Determine the number of available cores
   pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
+  int nr_cores = std::thread::hardware_concurrency();
+  ne.setNumberOfThreads(nr_cores);
+  
+  // Configure parameters
   ne.setInputCloud (input_cloud_);
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
   ne.setSearchMethod (tree);
-  //  ne.setRadiusSearch (radius_);
   ne.setKSearch (100);
+
+  // Estimate the normals
   ne.compute (*normals_);
 }
