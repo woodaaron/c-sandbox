@@ -3,7 +3,7 @@
 
 #include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
 #include <pcl/surface/gp3.h>
 #include <pcl/PolygonMesh.h>
 #include <pcl/geometry/mesh_base.h>
