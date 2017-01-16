@@ -13,14 +13,14 @@ add_definitions(${PCL_DEFINITIONS})
 include_directories(include)
 
 add_library(${PROJECT_NAME}
-			src/surface_segmentation.cpp
-			src/greedy_projection.cpp)
+			src/utils/surface_segmentation.cpp
+			src/pcl/pcl_greedy_projection.cpp)
 
-add_executable (hello src/hello_world.cpp)
-add_executable (ensenso_util src/ensenso_util.cpp)
-add_executable (pcl-greedy-projection src/pcl_greedy_projection.cpp)
-add_executable (pcd-to-vtp src/PCDtoVTP.cpp)
-add_executable (vtk-delaunay src/vtk_delaunay_projection.cpp)
+add_executable (hello src/hello/hello_world.cpp)
+add_executable (ensenso_util src/utils/ensenso_util.cpp)
+add_executable (pcl-greedy-projection src/pcl/pcl_greedy_projection.cpp)
+add_executable (pcd-to-vtp src/utils/PCDtoVTP.cpp)
+add_executable (vtk-delaunay src/vtk/vtk_delaunay_projection.cpp)
 target_link_libraries (ensenso_util ${PCL_LIBRARIES} ncurses)
 target_link_libraries (pcl-greedy-projection ${PCL_LIBRARIES} ${PROJECT_NAME})
 target_link_libraries (pcd-to-vtp ${PCL_LIBRARIES} ${PROJECT_NAME})

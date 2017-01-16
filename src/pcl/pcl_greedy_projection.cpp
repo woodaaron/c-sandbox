@@ -16,17 +16,20 @@ const int MAX_CLUSTER = 100000;
 int
 main (int argc, char** argv)
 {
+  if(argc < 4)
+  {
+    std::cout << "Usage: " << argv[0] << "input.pcd output-dir name" << std::endl;
+    return EXIT_FAILURE;
+  }
+
   // Load input file into a PointCloud<T> with an appropriate type
   pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PCLPointCloud2 cloud_blob;
-  //pcl::io::loadPCDFile ("/home/ros-industrial/Pictures/cup/cup-side.pcd", cloud_blob);
-  pcl::io::loadPCDFile ("/home/ros-industrial/Pictures/cup/cup-side-with-hole.pcd", cloud_blob);
+  pcl::io::loadPCDFile (argv[1], cloud_blob);
   pcl::fromPCLPointCloud2 (cloud_blob, *in_cloud);
   //* the data should be available in cloud
 
-  // Remove NANs
-  std::vector<int> index;
-  pcl::removeNaNFromPointCloud(*in_cloud, *in_cloud, index);
+  std::cout << "Input cloud has... " << std::to_string(in_cloud->points.size()) << " points" << std::endl;
 
   // Segment out surface ****************************************************************************************************
 
@@ -37,6 +40,14 @@ main (int argc, char** argv)
   std::vector <pcl::PointIndices> clusters = SS.computeSegments(region_colored_cloud_ptr);
   pcl::PointIndices::Ptr inliers_ptr(new pcl::PointIndices());
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> surface_clouds;
+
+  if(clusters.size() > 0)
+    std::cout << std::to_string(clusters.size()) << " clusters found" << std::endl;
+  else
+  {
+    std::cout << "No clusters found" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   std::cout << "Extracting surfaces\n";
   // Extract points from clusters into their own point clouds
@@ -52,14 +63,22 @@ main (int argc, char** argv)
       inliers_ptr->indices.insert(inliers_ptr->indices.end(), indices.indices.begin(), indices.indices.end());
 
       pcl::copyPointCloud(*in_cloud, indices, *segment_cloud_ptr);
+      std::vector<int> indices;
+      pcl::removeNaNFromPointCloud (*segment_cloud_ptr, *segment_cloud_ptr, indices);
       surface_clouds.push_back(segment_cloud_ptr);
     }
   }
 
-  std::cout << "Removing largest\n";
-  // Remove largest cluster if appropriate
-  if (REMOVE_LARGEST)
+  if(surface_clouds.size() == 0)
   {
+    std::cout << "No surfaces could be extracted" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Remove largest cluster if appropriate
+  if (REMOVE_LARGEST && surface_clouds.size() > 1)
+  {
+    std::cout << "Removing largest\n";
     int largest_index = 0;
     int largest_size = 0;
     for (int i = 0; i < surface_clouds.size(); i++)
@@ -76,11 +95,12 @@ main (int argc, char** argv)
   //************************************************************************************************************************
   int counter = 0;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = surface_clouds.at(0);
+  std::string dir = argv[2];
+  std::string prefix = argv[3];
 
   for(const auto& cloud : surface_clouds)
   {
-    pcl::io::savePCDFileASCII("surface" + std::to_string(++counter) + ".pcd", *cloud);
+    pcl::io::savePCDFileASCII(dir + "/" + prefix + "-surface-" + std::to_string(++counter) + ".pcd", *cloud);
 
     // Normal estimation*
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
@@ -126,7 +146,7 @@ main (int argc, char** argv)
     std::vector<int> parts = gp3.getPartIDs();
     std::vector<int> states = gp3.getPointStates();
 
-    pcl::io::saveVTKFile ("mesh" + std::to_string(counter) + ".vtk", triangles);
+    pcl::io::saveVTKFile (dir + "/" + prefix + "-mesh-" + std::to_string(counter) + ".vtk", triangles);
   }
 
   // Finish
