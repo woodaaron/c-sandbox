@@ -27,47 +27,18 @@ main (int argc, char** argv)
   pcl::PCLPointCloud2 cloud_blob;
   pcl::io::loadPCDFile (argv[1], cloud_blob);
   pcl::fromPCLPointCloud2 (cloud_blob, *in_cloud);
-  //* the data should be available in cloud
-
-  std::cout << "Input cloud has... " << std::to_string(in_cloud->points.size()) << " points" << std::endl;
+  
 
   // Segment out surface ****************************************************************************************************
 
   // Segment the part into surface clusters using a "region growing" scheme
-  std::cout << "Creating SS object\n";
   SurfaceSegmentation SS(in_cloud);
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr region_colored_cloud_ptr = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>());
   std::vector <pcl::PointIndices> clusters = SS.computeSegments(region_colored_cloud_ptr);
-  pcl::PointIndices::Ptr inliers_ptr(new pcl::PointIndices());
+
+  // Extract surface clouds from clusters
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> surface_clouds;
-
-  if(clusters.size() > 0)
-    std::cout << std::to_string(clusters.size()) << " clusters found" << std::endl;
-  else
-  {
-    std::cout << "No clusters found" << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  std::cout << "Extracting surfaces\n";
-  // Extract points from clusters into their own point clouds
-  for (int i = 0; i < clusters.size(); i++)
-  {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr segment_cloud_ptr = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::PointIndices& indices = clusters[i];
-    if (indices.indices.size() == 0)
-      continue;
-
-    if (indices.indices.size() >= MIN_CLUSTER)
-    {
-      inliers_ptr->indices.insert(inliers_ptr->indices.end(), indices.indices.begin(), indices.indices.end());
-
-      pcl::copyPointCloud(*in_cloud, indices, *segment_cloud_ptr);
-      std::vector<int> indices;
-      pcl::removeNaNFromPointCloud (*segment_cloud_ptr, *segment_cloud_ptr, indices);
-      surface_clouds.push_back(segment_cloud_ptr);
-    }
-  }
+  SS.getSurfaceClouds(surface_clouds);
 
   if(surface_clouds.size() == 0)
   {
@@ -75,7 +46,7 @@ main (int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  // Remove largest cluster if appropriate
+  // Remove largest surface if appropriate
   if (REMOVE_LARGEST && surface_clouds.size() > 1)
   {
     std::cout << "Removing largest\n";

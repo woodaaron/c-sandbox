@@ -19,7 +19,6 @@
 #include <pcl/surface/ear_clipping.h>
 #include <pcl/segmentation/region_growing.h>
 #include <pcl/filters/filter.h>
-#include <boost/foreach.hpp>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
 
@@ -102,6 +101,8 @@ public:
   void getBoundBoundaryHalfEdges (const Mesh &mesh,
                                   std::vector <Mesh::HalfEdgeIndices>& boundary_he_collection,
                                   const size_t  expected_size = 3);
+
+  void getSurfaceClouds(std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &surface_clouds);
 
 private:
   void removeNans();

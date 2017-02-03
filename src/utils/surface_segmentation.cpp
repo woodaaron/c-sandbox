@@ -16,11 +16,8 @@ SurfaceSegmentation::SurfaceSegmentation(pcl::PointCloud<pcl::PointXYZ>::Ptr icl
 {
   input_cloud_ =  pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
   normals_ =  pcl::PointCloud<pcl::Normal>::Ptr(new pcl::PointCloud<pcl::Normal>);
-  std::cout << "Setting input cloud\n";
   setInputCloud(icloud);
-  std::cout << "Removing NANs\n";
   removeNans();
-  std::cout << "Computing Normals\n";
   computeNormals();
 }
 
@@ -29,6 +26,7 @@ SurfaceSegmentation::SurfaceSegmentation(pcl::PointCloud<pcl::PointXYZ>::Ptr icl
 */
 void SurfaceSegmentation::setInputCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr icloud)
 {
+  input_cloud_->clear();
   pcl::copyPointCloud(*icloud, *input_cloud_);
 }
 
@@ -40,9 +38,8 @@ void SurfaceSegmentation::addCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr icloud)
   // push input_cloud onto icloud and then add, this strange sequence keeps ordering of clouds
   // and does not duplicate setInputCloud code
   for(const auto& pt : input_cloud_->points)
-  {
     icloud->push_back(pt);
-  }
+
   setInputCloud(icloud);
 }
 
@@ -59,7 +56,6 @@ pcl::PointCloud<pcl::Boundary>::Ptr SurfaceSegmentation::getBoundaryCloud()
     best.setInputCloud(input_cloud_);
     best.setInputNormals(normals_);
     best.setRadiusSearch (radius_);
-    //	best.setAngleThreshold(90.0*3.14/180.0);
     best.setSearchMethod (pcl::search::KdTree<pcl::PointXYZ>::Ptr (new pcl::search::KdTree<pcl::PointXYZ>));
     best.compute(*bps);
   }
@@ -400,7 +396,6 @@ void SurfaceSegmentation::removeNans()
 {
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud (*input_cloud_, *input_cloud_, indices);
-  //setInputCloud(nonans_cloud);
 }
 
 
@@ -420,4 +415,23 @@ void SurfaceSegmentation::computeNormals()
 
   // Estimate the normals
   ne.compute (*normals_);
+}
+
+
+void SurfaceSegmentation::getSurfaceClouds(std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &surface_clouds)
+{
+  surface_clouds.clear();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr segment_cloud_ptr = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+  for (const auto& cluster : clusters_)
+  {
+    pcl::PointIndices indices = cluster;
+    if (indices.indices.size() == 0)
+      continue;
+
+    if (indices.indices.size() >= MIN_CLUSTER_SIZE)
+    {
+      pcl::copyPointCloud(*input_cloud_, indices, *segment_cloud_ptr);
+      surface_clouds.push_back(segment_cloud_ptr);
+    }
+  }
 }
